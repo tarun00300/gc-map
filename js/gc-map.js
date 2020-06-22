@@ -1,7 +1,7 @@
 /*
  Vue.js Geocledian map component
  created:     2019-11-04, jsommer
- last update: 2020-06-21, Tarun
+ last update: 2020-06-22, Tarun
  version: 0.9.5
 */
 "use strict";
@@ -1356,7 +1356,6 @@ Vue.component('gc-map', {
       console.debug("GET " + this.getApiUrl(endpoint) + params);
 
       // axios implemented start
-      let temp = this;
       axios({
         method: 'GET',
         url: this.getApiUrl(endpoint) + params,
@@ -1366,43 +1365,43 @@ Vue.component('gc-map', {
   
             if (result.content == "key is not authorized") {
               // show message, hide spinner, don't show map
-              temp.api_err_msg = temp.$t('api_msg.unauthorized_key') + "<br>" + temp.$t('api_msg.support');
-              temp.isloading = false;
+              this.api_err_msg = this.$t('api_msg.unauthorized_key') + "<br>" + this.$t('api_msg.support');
+              this.isloading = false;
               return;
             }
             if (result.content == 	"api key validity expired") {
                 // show message, hide spinner, don't show map
-                temp.api_err_msg = temp.$t('api_msg.invalid_key') + "<br>" + temp.$t('api_msg.support');
-                temp.isloading = false;
+                this.api_err_msg = this.$t('api_msg.invalid_key') + "<br>" + this.$t('api_msg.support');
+                this.isloading = false;
                 return;
             }
   
             if ("count" in result) {
   
-              temp.total_parcel_count = result.count;
+              this.total_parcel_count = result.count;
   
               // minimum of 250
-              if (temp.total_parcel_count < temp.pagingStep) {
-                temp.pagingStep = temp.total_parcel_count;
+              if (this.total_parcel_count < this.pagingStep) {
+                this.pagingStep = this.total_parcel_count;
               } else {
-                temp.pagingStep = 250;
+                this.pagingStep = 250;
               }
   
-              if (temp.total_parcel_count == 0) {
+              if (this.total_parcel_count == 0) {
                 return;
               } 
               else {
                 // now get all parcels
-                if (temp.currentParcelID > 0) {
-                  temp.getAllParcels(temp.currentParcelID, temp.offset, filterString);
+                if (this.currentParcelID > 0) {
+                  this.getAllParcels(this.currentParcelID, this.offset, filterString);
                 } 
                 else {
-                  temp.getAllParcels(undefined, temp.offset, filterString);
+                  this.getAllParcels(undefined, this.offset, filterString);
                 }
               }
             }
         }
-      }).catch(err => {
+      }.bind(this)).catch(err => {
         console.log("err= " + err);
       })
 
@@ -1433,7 +1432,6 @@ Vue.component('gc-map', {
       console.debug("GET " + this.getApiUrl(endpoint) + params);
       
       // axios implemented start
-      let temp = this;
       axios({
       method: 'GET',
       url: this.getApiUrl(endpoint) + params,
@@ -1443,18 +1441,18 @@ Vue.component('gc-map', {
 
           if (result.content == "key is not authorized") {
             // show message, hide spinner, don't show map
-            temp.api_err_msg = temp.$t('api_msg.unauthorized_key') + "<br>" + temp.$t('api_msg.support');
-            temp.isloading = false;
+            this.api_err_msg = this.$t('api_msg.unauthorized_key') + "<br>" + this.$t('api_msg.support');
+            this.isloading = false;
             return;
           }
           if (result.content == 	"api key validity expired") {
               // show message, hide spinner, don't show map
-              temp.api_err_msg = temp.$t('api_msg.invalid_key') + "<br>" + temp.$t('api_msg.support');
-              temp.isloading = false;
+              this.api_err_msg = this.$t('api_msg.invalid_key') + "<br>" + this.$t('api_msg.support');
+              this.isloading = false;
               return;
           }
 
-          temp.parcels = [];
+          this.parcels = [];
 
           if (result.content.length == 0) {
             return;
@@ -1462,39 +1460,39 @@ Vue.component('gc-map', {
 
           for (var i = 0; i < result.content.length; i++) {
             var item = result.content[i];
-            temp.parcels.push(item);
+            this.parcels.push(item);
           }
 
           try {
             // if parcel_id was given as an argument to the function
             // set this value as currentParcelID
             if (parcel_id) {
-              temp.currentParcelID = parcel_id;
+              this.currentParcelID = parcel_id;
               console.debug("setting " + parcel_id + " parcel id as current!");
               // hack needed to call the change explicitely if the filter includes the first element
               // of previously unfiltered parcels!
               // 1=1 -> no change in watch of vuejs
-              temp.handleCurrentParcelIDchange(-1, temp.currentParcelID);
+              this.handleCurrentParcelIDchange(-1, this.currentParcelID);
             } else {
 
               console.debug("setting first parcel as current!");
 
-              temp.currentParcelID = temp.parcels[0].parcel_id;
+              this.currentParcelID = this.parcels[0].parcel_id;
               // hack needed to call the change explicitely if the filter includes the first element
               // of previously unfiltered parcels!
               // 1=1 -> no change in watch of vuejs
-              if (temp.currentParcelID == temp.parcels[0].parcel_id) {
-                temp.handleCurrentParcelIDchange(-1, temp.parcels[0].parcel_id);
+              if (this.currentParcelID == this.parcels[0].parcel_id) {
+                this.handleCurrentParcelIDchange(-1, this.parcels[0].parcel_id);
               }
 
-              console.debug("currentParcelID: " + temp.currentParcelID);
+              console.debug("currentParcelID: " + this.currentParcelID);
             }
           } catch (err) {
             console.log("error selecting parcel_id");
             console.log(err);
           }
         }
-      }).catch(err => {
+      }.bind(this)).catch(err => {
         console.log("err= " + err);
       })
     // axios implemented end
@@ -1551,14 +1549,13 @@ Vue.component('gc-map', {
       console.debug("GET " + this.getApiUrl(endpoint));
 
       // axios implemented start
-      let temp = this;
       axios({
       method: 'GET',
       url: this.getApiUrl(endpoint),
       }).then(function (response) {
       if(response.status === 200){
         var result  = response.data;
-        var row = temp.getCurrentParcel();
+        var row = this.getCurrentParcel();
 
           if (result.content.length > 0) {
             console.debug(row);
@@ -1574,12 +1571,12 @@ Vue.component('gc-map', {
             Vue.set(row, "centroid", result.content[0].centroid);
             Vue.set(row, "geometry", result.content[0].geometry);
 
-            temp.map_addParcel(result.content[0].geometry);
+            this.map_addParcel(result.content[0].geometry);
 
-            temp.getParcelsProductData(parcel_id, temp.selectedProduct, temp.selectedSource);
+            this.getParcelsProductData(parcel_id, this.selectedProduct, this.selectedSource);
           }
       }
-      }).catch(err => {
+      }.bind(this)).catch(err => {
         console.log("err= " + err);
       })
     // axios implemented end
@@ -1602,14 +1599,13 @@ Vue.component('gc-map', {
       console.debug("GET " + this.getApiUrl(endpoint) + params);
 
       // axios implemented start
-        let temp = this;
         axios({
         method: 'GET',
         url: this.getApiUrl(endpoint) + params,
         }).then(function (response) {
         if(response.status === 200){
           var result  = response.data;
-          let row = temp.getCurrentParcel();
+          let row = this.getCurrentParcel();
 
           if (result.content.length > 0) {
             // add new attributes via Vue.set
@@ -1619,26 +1615,26 @@ Vue.component('gc-map', {
             Vue.set(row, "timeseries", result.content); 
 
             //also set current timeseries
-            temp.currentTimeseries = result.content;
+            this.currentTimeseries = result.content;
 
             try{ 
               //init only if in Non-Edit mode
-              if (!temp.activeMapActions.includes("edit"))
-              temp.initTimeline();
+              if (!this.activeMapActions.includes("edit"))
+              this.initTimeline();
             } 
             catch (err) {}
 
             //show raster in map
-            temp.showCurrentRaster();
+            this.showCurrentRaster();
 
             //enable time slider buttons
-            try { temp.disableTimeSlider(false); } catch (err) {}
+            try { this.disableTimeSlider(false); } catch (err) {}
 
             //hide spinner
-            temp.isloading = false;
+            this.isloading = false;
           }
         }
-        }).catch(err => {
+        }.bind(this)).catch(err => {
           console.log("err= " + err);
         })
       // axios implemented end
@@ -1780,7 +1776,6 @@ Vue.component('gc-map', {
       console.debug("GET " + this.getApiUrl(endpoint) + params);
       
       // axios implemented start
-        let temp = this;
         axios({
         method: 'GET',
         url: this.getApiUrl(endpoint) + params,
@@ -1788,13 +1783,13 @@ Vue.component('gc-map', {
         if(response.status === 200){
           var result  = response.data;
           if (result.content.length > 0) {
-            temp.popup.setContent('<span class="is-large"><b>' + temp.$t("map.popups.indexValue")+ ': '+
+            this.popup.setContent('<span class="is-large"><b>' + this.$t("map.popups.indexValue")+ ': '+
               // Math.ceil(latlng.lat * 1000)/1000 + ", " + 
               // Math.ceil(latlng.lng * 1000)/1000 +"</b></span><br><span>"+
-              temp.formatDecimal(tmp.content[0].pixel_value) + "</span>");
+              this.formatDecimal(tmp.content[0].pixel_value) + "</span>");
           }
         }
-        }).catch(err => {
+        }.bind(this)).catch(err => {
         console.log("err= " + err);
         })
       // axios implemented end
@@ -1884,7 +1879,6 @@ Vue.component('gc-map', {
       console.debug("DELETE " + this.getApiUrl(endpoint));
 
       // axios implemented start
-        let temp = this;
         axios({
         method: 'DELETE',
         headers: {
@@ -1904,9 +1898,9 @@ Vue.component('gc-map', {
           if (result == "") {
             console.log("parcel marked for deletion.");
           }
-          temp.isloading = false;
+          this.isloading = false;
         }
-        }).catch(err => {
+        }.bind(this)).catch(err => {
           console.log("err= " + err);
         })
       // axios implemented end
@@ -1925,7 +1919,6 @@ Vue.component('gc-map', {
       console.debug("POST " + this.getApiUrl(endpoint));
 
       // axios implemented start
-        let temp = this;
         axios({
           method: 'POST',
           url: this.getApiUrl(endpoint) + params,
@@ -1937,30 +1930,30 @@ Vue.component('gc-map', {
         }).then(function (response) {
         if(response.status === 200){
           var result  = response.data;
-          document.getElementById("divNewParcelMsg_" + temp.gcWidgetId).classList.remove("is-hidden");
+          document.getElementById("divNewParcelMsg_" + this.gcWidgetId).classList.remove("is-hidden");
 
           if (tresultmp.errors.length > 0) {
             // show error message
-            document.getElementById("divNewParcelMsg_" + temp.gcWidgetId).innerHTML = "Errors: " + result.errors + "<br>";
+            document.getElementById("divNewParcelMsg_" + this.gcWidgetId).innerHTML = "Errors: " + result.errors + "<br>";
           }
           if (result.messages) {
             // show status message
-            document.getElementById("divNewParcelMsg_" + temp.gcWidgetId).innerHTML = "Response: " + result.messages.status + "<br>";
-            temp.newParcel.status = result.status;
+            document.getElementById("divNewParcelMsg_" + this.gcWidgetId).innerHTML = "Response: " + result.messages.status + "<br>";
+            this.newParcel.status = result.status;
           }
           if (result.errors.length == 0) {
 
-            temp.newParcel.id = result.id;
+            this.newParcel.id = result.id;
 
             //async - so pass the id to be set
             // empty viewModel first!
-            temp.parcels = [];
+            this.parcels = [];
 
-            temp.getParcelTotalCount(filterString);
+            this.getParcelTotalCount(filterString);
           }
-          document.getElementById("btnRegisterParcel_" + temp.gcWidgetId).classList.remove("is-loading");
+          document.getElementById("btnRegisterParcel_" + this.gcWidgetId).classList.remove("is-loading");
         }
-        }).catch(err => {
+        }.bind(this)).catch(err => {
           console.log("err= " + err);
         })
       // axios implemented end

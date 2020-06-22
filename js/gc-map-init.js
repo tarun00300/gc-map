@@ -106,7 +106,7 @@ function initComponent() {
 
     // load map component dynamically
     // change for DEBUG to js/gc-map.js
-    loadJSscript("js/gc-map.js", function() {
+    loadJSscript("js/gc-map.min.js", function() {
         /* when ready, init global vue root instance */
         vmRoot = new Vue({
             el: "#gc-app",
