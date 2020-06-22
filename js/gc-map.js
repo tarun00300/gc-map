@@ -1,8 +1,8 @@
 /*
  Vue.js Geocledian map component
  created:     2019-11-04, jsommer
- last update: 2020-06-18, jsommer
- version: 0.9.4
+ last update: 2020-06-21, Tarun
+ version: 0.9.5
 */
 "use strict";
 
@@ -1350,58 +1350,64 @@ Vue.component('gc-map', {
       } else {
         params = "&count=True";
       }
-      let xmlHttp = new XMLHttpRequest();
-      let async = true;
 
       //Show requests on the DEBUG console for developers
       console.debug("getParcelTotalCount()");
       console.debug("GET " + this.getApiUrl(endpoint) + params);
 
-      xmlHttp.onreadystatechange = function () {
-        if (xmlHttp.readyState == 4) {
-          var tmp = JSON.parse(xmlHttp.responseText);
-
-          if (tmp.content == "key is not authorized") {
-            // show message, hide spinner, don't show map
-            this.api_err_msg = this.$t('api_msg.unauthorized_key') + "<br>" + this.$t('api_msg.support');
-            this.isloading = false;
-            return;
-          }
-          if (tmp.content == 	"api key validity expired") {
+      // axios implemented start
+      let temp = this;
+      axios({
+        method: 'GET',
+        url: this.getApiUrl(endpoint) + params,
+      }).then(function (response) {
+        if(response.status === 200){
+            var result = response.data;
+  
+            if (result.content == "key is not authorized") {
               // show message, hide spinner, don't show map
-              this.api_err_msg = this.$t('api_msg.invalid_key') + "<br>" + this.$t('api_msg.support');
-              this.isloading = false;
+              temp.api_err_msg = temp.$t('api_msg.unauthorized_key') + "<br>" + temp.$t('api_msg.support');
+              temp.isloading = false;
               return;
-          }
-
-          if ("count" in tmp) {
-
-            this.total_parcel_count = tmp.count;
-
-            // minimum of 250
-            if (this.total_parcel_count < this.pagingStep) {
-              this.pagingStep = this.total_parcel_count;
-            } else {
-              this.pagingStep = 250;
             }
-
-            if (this.total_parcel_count == 0) {
-              return;
-            } 
-            else {
-              // now get all parcels
-              if (this.currentParcelID > 0) {
-                this.getAllParcels(this.currentParcelID, this.offset, filterString);
+            if (result.content == 	"api key validity expired") {
+                // show message, hide spinner, don't show map
+                temp.api_err_msg = temp.$t('api_msg.invalid_key') + "<br>" + temp.$t('api_msg.support');
+                temp.isloading = false;
+                return;
+            }
+  
+            if ("count" in result) {
+  
+              temp.total_parcel_count = result.count;
+  
+              // minimum of 250
+              if (temp.total_parcel_count < temp.pagingStep) {
+                temp.pagingStep = temp.total_parcel_count;
+              } else {
+                temp.pagingStep = 250;
+              }
+  
+              if (temp.total_parcel_count == 0) {
+                return;
               } 
               else {
-                this.getAllParcels(undefined, this.offset, filterString);
+                // now get all parcels
+                if (temp.currentParcelID > 0) {
+                  temp.getAllParcels(temp.currentParcelID, temp.offset, filterString);
+                } 
+                else {
+                  temp.getAllParcels(undefined, temp.offset, filterString);
+                }
               }
             }
-          }
         }
-      }.bind(this);
-      xmlHttp.open("GET", this.getApiUrl(endpoint) + params, async);
-      xmlHttp.send();
+      }).catch(err => {
+        console.log("err= " + err);
+      })
+
+      // axios implemented end
+
     },
     getAllParcels: function (parcel_id, offset, filterString) {
 
@@ -1421,74 +1427,78 @@ Vue.component('gc-map', {
       if (filterString) {
         params = params + filterString;
       }
-      let xmlHttp = new XMLHttpRequest();
-      let async = true;
 
       //Show requests on the DEBUG console for developers
       console.debug("getAllParcels()");
       console.debug("GET " + this.getApiUrl(endpoint) + params);
+      
+      // axios implemented start
+      let temp = this;
+      axios({
+      method: 'GET',
+      url: this.getApiUrl(endpoint) + params,
+      }).then(function (response) {
+        if(response.status === 200){
+          var result = response.data;
 
-      xmlHttp.onreadystatechange = function () {
-        if (xmlHttp.readyState == 4) {
-          var tmp = JSON.parse(xmlHttp.responseText);
-
-          if (tmp.content == "key is not authorized") {
+          if (result.content == "key is not authorized") {
             // show message, hide spinner, don't show map
-            this.api_err_msg = this.$t('api_msg.unauthorized_key') + "<br>" + this.$t('api_msg.support');
-            this.isloading = false;
+            temp.api_err_msg = temp.$t('api_msg.unauthorized_key') + "<br>" + temp.$t('api_msg.support');
+            temp.isloading = false;
             return;
           }
-          if (tmp.content == 	"api key validity expired") {
+          if (result.content == 	"api key validity expired") {
               // show message, hide spinner, don't show map
-              this.api_err_msg = this.$t('api_msg.invalid_key') + "<br>" + this.$t('api_msg.support');
-              this.isloading = false;
+              temp.api_err_msg = temp.$t('api_msg.invalid_key') + "<br>" + temp.$t('api_msg.support');
+              temp.isloading = false;
               return;
           }
 
-          this.parcels = [];
+          temp.parcels = [];
 
-          if (tmp.content.length == 0) {
+          if (result.content.length == 0) {
             return;
           }
 
-          for (var i = 0; i < tmp.content.length; i++) {
-            var item = tmp.content[i];
-            this.parcels.push(item);
+          for (var i = 0; i < result.content.length; i++) {
+            var item = result.content[i];
+            temp.parcels.push(item);
           }
 
           try {
             // if parcel_id was given as an argument to the function
             // set this value as currentParcelID
             if (parcel_id) {
-              this.currentParcelID = parcel_id;
+              temp.currentParcelID = parcel_id;
               console.debug("setting " + parcel_id + " parcel id as current!");
               // hack needed to call the change explicitely if the filter includes the first element
               // of previously unfiltered parcels!
               // 1=1 -> no change in watch of vuejs
-              this.handleCurrentParcelIDchange(-1, this.currentParcelID);
+              temp.handleCurrentParcelIDchange(-1, temp.currentParcelID);
             } else {
 
               console.debug("setting first parcel as current!");
 
-              this.currentParcelID = this.parcels[0].parcel_id;
+              temp.currentParcelID = temp.parcels[0].parcel_id;
               // hack needed to call the change explicitely if the filter includes the first element
               // of previously unfiltered parcels!
               // 1=1 -> no change in watch of vuejs
-              if (this.currentParcelID == this.parcels[0].parcel_id) {
-                this.handleCurrentParcelIDchange(-1, this.parcels[0].parcel_id);
+              if (temp.currentParcelID == temp.parcels[0].parcel_id) {
+                temp.handleCurrentParcelIDchange(-1, temp.parcels[0].parcel_id);
               }
 
-              console.debug("currentParcelID: " + this.currentParcelID);
+              console.debug("currentParcelID: " + temp.currentParcelID);
             }
           } catch (err) {
             console.log("error selecting parcel_id");
             console.log(err);
           }
-
         }
-      }.bind(this);
-      xmlHttp.open("GET", this.getApiUrl(endpoint) + params, async);
-      xmlHttp.send();
+      }).catch(err => {
+        console.log("err= " + err);
+      })
+    // axios implemented end
+
     },
     // hack; see getAllParcels() for explanation
     handleCurrentParcelIDchange: function () {
@@ -1536,41 +1546,45 @@ Vue.component('gc-map', {
     getParcelsAttributes(parcel_id) {
 
       const endpoint = "/parcels/" + parcel_id;
-      let xmlHttp = new XMLHttpRequest();
-      let async = true;
-
       //Show requests on the DEBUG console for developers
       console.debug("getParcelsAttributes()");
       console.debug("GET " + this.getApiUrl(endpoint));
 
-      xmlHttp.onreadystatechange = function () {
-        if (xmlHttp.readyState == 4) {
-          var tmp = JSON.parse(xmlHttp.responseText);
-          var row = this.getCurrentParcel();
+      // axios implemented start
+      let temp = this;
+      axios({
+      method: 'GET',
+      url: this.getApiUrl(endpoint),
+      }).then(function (response) {
+      if(response.status === 200){
+        var result  = response.data;
+        var row = temp.getCurrentParcel();
 
-          if (tmp.content.length > 0) {
+          if (result.content.length > 0) {
             console.debug(row);
             // add new attributes via Vue.set
             // it's ok always to use the first element, because it has been filtered
             // by unique parcel_id
-            Vue.set(row, "area", tmp.content[0].area);
-            Vue.set(row, "planting", tmp.content[0].planting);
-            Vue.set(row, "harvest", tmp.content[0].harvest);
-            Vue.set(row, "startdate", tmp.content[0].startdate);
-            Vue.set(row, "enddate", tmp.content[0].enddate);
-            Vue.set(row, "lastupdate", tmp.content[0].lastupdate);
-            Vue.set(row, "centroid", tmp.content[0].centroid);
-            Vue.set(row, "geometry", tmp.content[0].geometry);
+            Vue.set(row, "area", result.content[0].area);
+            Vue.set(row, "planting", result.content[0].planting);
+            Vue.set(row, "harvest", result.content[0].harvest);
+            Vue.set(row, "startdate", result.content[0].startdate);
+            Vue.set(row, "enddate", result.content[0].enddate);
+            Vue.set(row, "lastupdate", result.content[0].lastupdate);
+            Vue.set(row, "centroid", result.content[0].centroid);
+            Vue.set(row, "geometry", result.content[0].geometry);
 
-            this.map_addParcel(tmp.content[0].geometry);
+            temp.map_addParcel(result.content[0].geometry);
 
-            this.getParcelsProductData(parcel_id, this.selectedProduct, this.selectedSource);
+            temp.getParcelsProductData(parcel_id, temp.selectedProduct, temp.selectedSource);
           }
+      }
+      }).catch(err => {
+        console.log("err= " + err);
+      })
+    // axios implemented end
 
-        }
-      }.bind(this);
-      xmlHttp.open("GET", this.getApiUrl(endpoint), async);
-      xmlHttp.send();
+
     },
     getParcelsProductData: function (parcel_id, productName, source) {
 
@@ -1580,9 +1594,6 @@ Vue.component('gc-map', {
       const endpoint = "/parcels/" + parcel_id + "/" + productName
       let params = "&source=" + source + "&order=date";
 
-      let xmlHttp = new XMLHttpRequest();
-      let async = true;
-
       // empty timeseries first!
       this.currentTimeseries = [];
 
@@ -1590,46 +1601,47 @@ Vue.component('gc-map', {
       console.debug("getParcelsProductData()");
       console.debug("GET " + this.getApiUrl(endpoint) + params);
 
-      xmlHttp.onreadystatechange = function () {
-        if (xmlHttp.readyState == 4) {
-          //console.log(xmlHttp.responseText);
-          let tmp = JSON.parse(xmlHttp.responseText);
-          let row = this.getCurrentParcel();
+      // axios implemented start
+        let temp = this;
+        axios({
+        method: 'GET',
+        url: this.getApiUrl(endpoint) + params,
+        }).then(function (response) {
+        if(response.status === 200){
+          var result  = response.data;
+          let row = temp.getCurrentParcel();
 
-          if (tmp.content.length > 0) {
+          if (result.content.length > 0) {
             // add new attributes via Vue.set
 
             // one parcel can have 1-n rasters of the same product (time series!)
             // add all rasters (=time series)
-            Vue.set(row, "timeseries", tmp.content); //url + tmp.content[0].png + "?key=" + key);
+            Vue.set(row, "timeseries", result.content); 
 
             //also set current timeseries
-            this.currentTimeseries = tmp.content;
-
-            //set max value of timeslider
-            //document.getElementById("inpTimeSlider").max = tmp.content.length -1;
+            temp.currentTimeseries = result.content;
 
             try{ 
               //init only if in Non-Edit mode
-              if (!this.activeMapActions.includes("edit"))
-                this.initTimeline();
+              if (!temp.activeMapActions.includes("edit"))
+              temp.initTimeline();
             } 
             catch (err) {}
 
             //show raster in map
-            this.showCurrentRaster();
+            temp.showCurrentRaster();
 
             //enable time slider buttons
-            try { this.disableTimeSlider(false); } catch (err) {}
+            try { temp.disableTimeSlider(false); } catch (err) {}
 
             //hide spinner
-            this.isloading = false;
+            temp.isloading = false;
           }
-
         }
-      }.bind(this);
-      xmlHttp.open("GET", this.getApiUrl(endpoint) + params, async);
-      xmlHttp.send();
+        }).catch(err => {
+          console.log("err= " + err);
+        })
+      // axios implemented end
     },
     getCurrentParcel: function () {
 
@@ -1764,26 +1776,30 @@ Vue.component('gc-map', {
       const endpoint =  "/parcels/" + parcel_id + "/" + productName + "/" + source + "/" + raster_id;
       let params =  "&lat=" + latlng.lat + "&lon=" + latlng.lng;
 
-      let xmlHttp = new XMLHttpRequest();
-      let async = true;
-
       //Show requests on the DEBUG console for developers
       console.debug("GET " + this.getApiUrl(endpoint) + params);
-
-      xmlHttp.onreadystatechange = function () {
-        if (xmlHttp.readyState == 4) {
-          var tmp = JSON.parse(xmlHttp.responseText);
-
-          if (tmp.content.length > 0) {
-            this.popup.setContent('<span class="is-large"><b>' + this.$t("map.popups.indexValue")+ ': '+
+      
+      // axios implemented start
+        let temp = this;
+        axios({
+        method: 'GET',
+        url: this.getApiUrl(endpoint) + params,
+        }).then(function (response) {
+        if(response.status === 200){
+          var result  = response.data;
+          if (result.content.length > 0) {
+            temp.popup.setContent('<span class="is-large"><b>' + temp.$t("map.popups.indexValue")+ ': '+
               // Math.ceil(latlng.lat * 1000)/1000 + ", " + 
               // Math.ceil(latlng.lng * 1000)/1000 +"</b></span><br><span>"+
-              this.formatDecimal(tmp.content[0].pixel_value) + "</span>");
+              temp.formatDecimal(tmp.content[0].pixel_value) + "</span>");
           }
         }
-      }.bind(this);
-      xmlHttp.open("GET", this.getApiUrl(endpoint) + params, async);
-      xmlHttp.send();
+        }).catch(err => {
+        console.log("err= " + err);
+        })
+      // axios implemented end
+
+
     },
     createParcelAction: function () {
 
@@ -1860,44 +1876,40 @@ Vue.component('gc-map', {
       }
     },
     deleteParcel: function (parcel_id) {
-
       document.getElementById("btnDeleteParcel_" + this.gcWidgetId).classList.add("is-loading");
-
       const endpoint = "/parcels/" + parcel_id;
 
       //Show requests on the DEBUG console for developers
       console.debug("deleteParcel()");
       console.debug("DELETE " + this.getApiUrl(endpoint));
 
-      var xmlHttp = new XMLHttpRequest();
-      var async = true;
-
-      xmlHttp.onreadystatechange = function () {
-        if (xmlHttp.readyState == 4) //if ready
-        {
-          console.debug("response " + xmlHttp.responseText + " - " + xmlHttp.status);
-
-          if (xmlHttp.responseText == "1") {
+      // axios implemented start
+        let temp = this;
+        axios({
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        url: this.getApiUrl(endpoint),
+        }).then(function (response) {
+        if(response.status === 200){
+          var result  = response.data;
+          if (result == "1") {
             console.log("parcel deleted.");
           }
-          if (xmlHttp.responseText == "0") {
+          if (result == "0") {
             console.log("error deleting parcel.");
           }
-          if (xmlHttp.responseText == "") {
+          if (result == "") {
             console.log("parcel marked for deletion.");
           }
-          //refresh parcel list
-          //this.removeFilter();
-
-          //hide loading spinner
-          this.isloading = false;
+          temp.isloading = false;
         }
-      }.bind(this);
-
-      xmlHttp.open("DELETE", this.getApiUrl(endpoint), async);
-      xmlHttp.setRequestHeader('Content-type', 'application/json');
-
-      xmlHttp.send(null);
+        }).catch(err => {
+          console.log("err= " + err);
+        })
+      // axios implemented end
     },
     registerParcel: function () {
 
@@ -1911,45 +1923,47 @@ Vue.component('gc-map', {
       //Show requests on the DEBUG console for developers
       console.debug("registerParcel()");
       console.debug("POST " + this.getApiUrl(endpoint));
-      //console.debug(postData);
 
-      let xmlHttp = new XMLHttpRequest();
-      let async = true;
+      // axios implemented start
+        let temp = this;
+        axios({
+          method: 'POST',
+          url: this.getApiUrl(endpoint) + params,
+          data: postData,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          }
+        }).then(function (response) {
+        if(response.status === 200){
+          var result  = response.data;
+          document.getElementById("divNewParcelMsg_" + temp.gcWidgetId).classList.remove("is-hidden");
 
-      xmlHttp.onreadystatechange = function () {
-        if (xmlHttp.readyState == 4) //if ready
-        {
-          console.debug(xmlHttp.responseText);
-          var tmp = JSON.parse(xmlHttp.responseText);
-
-          document.getElementById("divNewParcelMsg_" + this.gcWidgetId).classList.remove("is-hidden");
-
-          if (tmp.errors.length > 0) {
+          if (tresultmp.errors.length > 0) {
             // show error message
-            document.getElementById("divNewParcelMsg_" + this.gcWidgetId).innerHTML = "Errors: " + tmp.errors + "<br>";
+            document.getElementById("divNewParcelMsg_" + temp.gcWidgetId).innerHTML = "Errors: " + result.errors + "<br>";
           }
-          if (tmp.messages) {
+          if (result.messages) {
             // show status message
-            document.getElementById("divNewParcelMsg_" + this.gcWidgetId).innerHTML = "Response: " + tmp.messages.status + "<br>";
-            this.newParcel.status = tmp.status;
+            document.getElementById("divNewParcelMsg_" + temp.gcWidgetId).innerHTML = "Response: " + result.messages.status + "<br>";
+            temp.newParcel.status = result.status;
           }
-          if (tmp.errors.length == 0) {
+          if (result.errors.length == 0) {
 
-            this.newParcel.id = tmp.id;
+            temp.newParcel.id = result.id;
 
             //async - so pass the id to be set
             // empty viewModel first!
-            this.parcels = [];
+            temp.parcels = [];
 
-            this.getParcelTotalCount(filterString);
+            temp.getParcelTotalCount(filterString);
           }
-          document.getElementById("btnRegisterParcel_" + this.gcWidgetId).classList.remove("is-loading");
+          document.getElementById("btnRegisterParcel_" + temp.gcWidgetId).classList.remove("is-loading");
         }
-      }.bind(this);
-
-      xmlHttp.open("POST", this.getApiUrl(endpoint), async);
-      xmlHttp.setRequestHeader("Content-type", "application/json");
-      xmlHttp.send(postData); //must be string
+        }).catch(err => {
+          console.log("err= " + err);
+        })
+      // axios implemented end
     },
     queryIndexValueAction: function () {
 
