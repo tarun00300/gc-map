@@ -1908,7 +1908,13 @@ Vue.component('gc-map', {
         if(response.status === 200){
           var tmp = response.data;
 
-          if (tmp === "") {
+          // if (xmlHttp.responseText === "1") {
+          //   console.log("parcel deleted.");
+          // }
+          // if (xmlHttp.responseText === "0") {
+          //   console.log("error deleting parcel.");
+          // }
+          if (xmlHttp.responseText === "") {
             console.log("parcel marked for deletion.");
           }
 
